@@ -112,10 +112,16 @@ class LibUSBConan(ConanFile):
     def _configure_autotools(self):
         if not self._autotools:
             self._autotools = AutoToolsBuildEnvironment(self, win_bash=tools.os_info.is_windows)
+            self._autotools.fpic = True if self.options.get_safe('fPIC') else False
             configure_args = ["--enable-shared" if self.options.shared else "--disable-shared"]
             configure_args.append("--enable-static" if not self.options.shared else "--disable-static")
             if self.settings.os in ["Linux", "Android"]:
                 configure_args.append("--enable-udev" if self.options.enable_udev else "--disable-udev")
+                if hasattr(self, 'settings_build') and self.env.get("CROSS_COMPILE"):
+                    host_str = self.env.get("CROSS_COMPILE")
+                    if host_str.endswith('-'):
+                        host_str = host_str[:-1]
+                    configure_args.append("--host={}".format(host_str.lower()))
             elif self._is_mingw:
                 if self.settings.arch == "x86_64":
                     configure_args.append("--host=x86_64-w64-mingw32")
